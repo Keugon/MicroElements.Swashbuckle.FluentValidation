@@ -8,6 +8,7 @@ using MicroElements.OpenApi;
 using MicroElements.OpenApi.Core;
 using MicroElements.OpenApi.FluentValidation;
 using MicroElements.OpenApi.FluentValidation.FileUpload;
+using MicroElements.OpenApi.FluentValidation.OpenApiDescription;
 using Microsoft.Extensions.Options;
 #if !OPENAPI_V2
 using Microsoft.OpenApi.Models;
@@ -210,6 +211,16 @@ namespace MicroElements.AspNetCore.OpenApi.FluentValidation
                             OpenApiSchemaCompatibility.SetExclusiveMaximum(schemaProperty, true);
                         }
                     }
+                });
+
+            yield return new FluentValidationRule("Description")
+                .WithCondition(validator => validator is IOpenApiDescriptionValidator)
+                .WithApply(context =>
+                {
+                    // Custom description attached to the rule with '.WithOpenApiDescription(...)'.
+                    // Appended to an existing description (e.g. XML doc summary) instead of replacing it.
+                    var description = ((IOpenApiDescriptionValidator)context.PropertyValidator).Description;
+                    context.Property.Description = OpenApiDescriptionBuilder.Append(context.Property.Description, description);
                 });
         }
     }

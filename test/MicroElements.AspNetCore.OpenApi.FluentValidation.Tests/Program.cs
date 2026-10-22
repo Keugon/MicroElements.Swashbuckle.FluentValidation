@@ -43,5 +43,8 @@ app.MapPost("/api/request", (TestRequestWithNested dto) => Results.Ok(dto));
 app.MapPost("/api/collections", (TestCollectionModel model) => Results.Ok(model));
 app.MapPost("/api/password", (TestPasswordModel model) => Results.Ok(model));
 app.MapPost("/api/upload", ([Microsoft.AspNetCore.Mvc.FromForm] UploadImageRequest request) => Results.Ok()).DisableAntiforgery();
+app.MapPost("/api/description", (TestDescriptionModel model) => Results.Ok(model));
+app.MapGet("/api/description-search", ([AsParameters] TestDescriptionQuery query) => Results.Ok(query));
+app.MapPost("/api/xml-doc-description", (TestXmlDocDescriptionModel model) => Results.Ok(model));
 
 app.Run();

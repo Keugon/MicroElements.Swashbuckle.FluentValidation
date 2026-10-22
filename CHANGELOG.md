@@ -1,3 +1,12 @@
+# Changes in 7.3.0
+- Added: custom property descriptions for **Microsoft.AspNetCore.OpenApi** — `.WithOpenApiDescription("...")` on a rule writes the text into the `description` of the property schema
+  - Custom validation rules such as `.Must(...)` carry no introspectable metadata, so they produced no output in the OpenAPI document. The new rule attaches a description to the validated property: `RuleFor(x => x.ThisIsaStringProperty).NotEmpty().WithOpenApiDescription("Rechnungsnummer, Format 'RE-2024-0001'.")`
+  - The rule is annotation-only: it never fails validation and does not change the runtime behaviour. It is implemented as a FluentValidation validator that carries the text, because FluentValidation exposes no public accessor for a rule or its components
+  - The text is **appended** to an existing description (e.g. an XML doc summary) instead of replacing it; several `.WithOpenApiDescription(...)` calls on one property are kept in rule order
+  - For `[FromQuery]`/`[AsParameters]` parameters the description is copied to the parameter schema as well (an own parameter description wins)
+  - Known limitations: a property rendered as a `$ref` (enum, nested type) cannot carry a description (same as the other constraints, Issue #176), and `.WithOpenApiDescription(...)` on a rule that also uses `.When(...)`/`.Unless(...)` is dropped together with that rule (`ConditionalRulesMode.Exclude`, the default)
+  - Backend support: **Microsoft.AspNetCore.OpenApi** only for now. The rule is backend-independent — the Swashbuckle and NSwag rule providers can adopt it the same way (only the schema write differs)
+
 # Changes in 7.2.2
 - Fixed: `MicroElements.AspNetCore.OpenApi.FluentValidation` did not apply FluentValidation rules to a `[FromForm]` DTO bound by an **MVC controller** action (Issue #232, follow-up to the Swashbuckle-only #170 fix)
   - Root cause: MVC `ApiExplorer` flattens a controller's `[FromForm]` complex parameter into one form field per property, so `Microsoft.AspNetCore.OpenApi` builds the request body as an **inline** schema from those descriptions and never asks for the DTO's `JsonTypeInfo` — `FluentValidationSchemaTransformer` therefore never saw the type. Minimal API form bodies are not flattened and were never affected

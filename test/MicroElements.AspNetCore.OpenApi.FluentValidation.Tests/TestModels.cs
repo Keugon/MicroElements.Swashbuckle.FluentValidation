@@ -4,6 +4,7 @@
 using System.Numerics;
 using FluentValidation;
 using MicroElements.OpenApi.FluentValidation.FileUpload;
+using MicroElements.OpenApi.FluentValidation.OpenApiDescription;
 using Microsoft.AspNetCore.Http;
 
 // Marker class for WebApplicationFactory
@@ -240,5 +241,66 @@ public class TestTraceHeadersValidator : AbstractValidator<TestTraceHeaders>
     {
         RuleFor(x => x.XTraceId).NotEmpty().MaximumLength(36);
         RuleFor(x => x.XRequestId).NotEmpty().MaximumLength(64);
+    }
+}
+
+// Custom OpenAPI descriptions (.WithOpenApiDescription)
+public class TestDescriptionModel
+{
+    public string InvoiceNumber { get; set; } = string.Empty;
+
+    public string Plain { get; set; } = string.Empty;
+
+    public string TwoNotes { get; set; } = string.Empty;
+}
+
+public class TestDescriptionModelValidator : AbstractValidator<TestDescriptionModel>
+{
+    public TestDescriptionModelValidator()
+    {
+        RuleFor(x => x.InvoiceNumber)
+            .NotEmpty()
+            .Must(x => x.StartsWith("RE-")).WithMessage("Must start with RE-")
+            .WithOpenApiDescription("Invoice number, format 'RE-2024-0001'.");
+
+        // No description -> no 'description' in the schema.
+        RuleFor(x => x.Plain).NotEmpty();
+
+        // Two descriptions on one property -> both are kept, in rule order.
+        RuleFor(x => x.TwoNotes)
+            .NotEmpty()
+            .WithOpenApiDescription("First note.")
+            .WithOpenApiDescription("Second note.");
+    }
+}
+
+// Custom OpenAPI description on a [FromQuery] parameter.
+public class TestDescriptionQuery
+{
+    public string Search { get; set; } = string.Empty;
+}
+
+public class TestDescriptionQueryValidator : AbstractValidator<TestDescriptionQuery>
+{
+    public TestDescriptionQueryValidator()
+    {
+        RuleFor(x => x.Search).NotEmpty().WithOpenApiDescription("Search term.");
+    }
+}
+
+// The XML doc summary is already in the schema description — the custom description is appended to it.
+public class TestXmlDocDescriptionModel
+{
+    /// <summary>Die Rechnungsnummer.</summary>
+    public string InvoiceNumber { get; set; } = string.Empty;
+}
+
+public class TestXmlDocDescriptionModelValidator : AbstractValidator<TestXmlDocDescriptionModel>
+{
+    public TestXmlDocDescriptionModelValidator()
+    {
+        RuleFor(x => x.InvoiceNumber)
+            .NotEmpty()
+            .WithOpenApiDescription("Format 'RE-2024-0001'.");
     }
 }

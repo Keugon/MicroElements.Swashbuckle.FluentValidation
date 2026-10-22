@@ -666,6 +666,9 @@ namespace MicroElements.AspNetCore.OpenApi.FluentValidation
             if (source.ExclusiveMinimum != null) target.ExclusiveMinimum = source.ExclusiveMinimum;
             if (source.ExclusiveMaximum != null) target.ExclusiveMaximum = source.ExclusiveMaximum;
             if (source.Format != null) target.Format = source.Format;
+
+            // Custom description (see '.WithOpenApiDescription(...)') — an own parameter description wins.
+            if (target.Description == null && source.Description != null) target.Description = source.Description;
         }
 
         /// <summary>

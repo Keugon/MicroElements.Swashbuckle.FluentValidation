@@ -8,6 +8,9 @@
     <IsPackable>false</IsPackable>
     <OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
     <InterceptorsNamespaces Condition="'$(TargetFramework)' == 'net10.0'">$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
+    <!-- XML doc comments end up in the OpenAPI schema descriptions (Microsoft.AspNetCore.OpenApi). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">

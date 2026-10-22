@@ -237,6 +237,58 @@ Notes:
 - NSwag requires registering the operation processor: `settings.OperationProcessors.Add(serviceProvider.GetService<FluentValidationOperationProcessor>())` (see the NSwag sample).
 - Microsoft.AspNetCore.OpenApi: on net10 the file part is emitted as a `$ref` to a shared `IFormFile` component, so the size/content-type **`description`** is shared across all `IFormFile` endpoints (differing per-endpoint rules would accumulate there) — but `encoding.contentType` is per-operation and unaffected.
 
+## Property descriptions (`.WithOpenApiDescription`)
+
+Custom validation rules such as `.Must(...)` carry no introspectable metadata, so nothing is written to the
+OpenAPI document for them. Use `.WithOpenApiDescription(...)` to attach a description to a property:
+
+```csharp
+using MicroElements.OpenApi.FluentValidation.OpenApiDescription;
+
+public class RechnungValidator : AbstractValidator<Rechnung>
+{
+    public RechnungValidator()
+    {
+        RuleFor(x => x.ThisIsaStringProperty)
+            .NotEmpty()
+            .Must(x => x.StartsWith("RE-")).WithMessage("Must start with RE-")
+            .WithOpenApiDescription("Rechnungsnummer, Format 'RE-2024-0001'.");
+    }
+}
+```
+
+```yaml
+ThisIsaStringProperty:
+  type: string
+  minLength: 1
+  description: "Rechnungsnummer, Format 'RE-2024-0001'."
+```
+
+The rule is **annotation-only**: it never fails validation and does not change the runtime behaviour.
+
+Notes:
+- The text is **appended** to an existing description (e.g. an XML doc summary) instead of replacing it. Several
+  `.WithOpenApiDescription(...)` calls on one property are kept, in rule order.
+  (XML doc summaries are part of the schema description from ASP.NET Core 10 on — `Microsoft.AspNetCore.OpenApi`
+  reads XML comments starting with .NET 10.)
+- The description is written to the property schema. For `[FromQuery]`/`[AsParameters]` parameters it is copied to
+  the parameter schema as well (an own parameter description wins).
+- A property rendered as a `$ref` (enum, nested type) cannot carry a description — the same limitation as the other
+  constraints (Issue #176).
+- `.WithOpenApiDescription(...)` on a rule that also uses `.When(...)`/`.Unless(...)` is dropped together with that
+  rule (`ConditionalRulesMode.Exclude`, the default).
+
+Backend support:
+
+| Backend | description |
+|---|---|
+| Microsoft.AspNetCore.OpenApi | ✅ |
+| Swashbuckle | not yet |
+| NSwag | not yet |
+
+The rule itself is backend-agnostic — the Swashbuckle and NSwag rule providers can adopt it the same way (the rule
+is backend-independent, only the schema write differs).
+
 ## Extensibility
 
 You can register FluentValidationRule in ServiceCollection.
@@ -250,8 +302,12 @@ List or default rules:
 * NotEmpty
 * Length
 * Pattern
+* EMail
 * Comparison
 * Between
+* FileContentType
+* FileSize
+* Description
 
 Example of rule:
 
